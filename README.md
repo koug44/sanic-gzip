@@ -12,8 +12,9 @@ Install with `pip`:
 Usage is as simple as a decorator before your function
 
 ```python
+from sanic import Sanic
 from sanic_gzip import compress
-j
+
 app = Sanic(__name__)
 
 @app.get("/logs")
