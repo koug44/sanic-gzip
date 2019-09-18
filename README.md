@@ -16,9 +16,10 @@ from sanic import Sanic
 from sanic_gzip import compress
 
 app = Sanic(__name__)
+compress = Compress()
 
 @app.get("/logs")
-@compress()
+@compress.compress()
 async def my_verbose_function(request):
 ```
 
@@ -26,8 +27,9 @@ The current version supports both gzip and deflate algorithms.
 
 ## Options
 
-You can specify the compression level (1-9) and the minimum size (in bytes) threshold for compressing responses.
+Config options are to be setted as init argument:
 
-```python
-def compress(compress_level=6, compress_min_size=500):
-```
+* Compression min. size
+* Compression level
+* MIME types impacted
+* Number of threadused for compression
