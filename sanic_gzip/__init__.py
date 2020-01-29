@@ -1,11 +1,11 @@
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial, wraps
 import gzip
 import zlib
-import asyncio
 
-from functools import wraps, partial
+from sanic.request import Request
 from sanic.response import StreamingHTTPResponse
-from concurrent.futures import ThreadPoolExecutor
-
 
 DEFAULT_MIME_TYPES = frozenset(
     [
@@ -40,7 +40,7 @@ class Compress(object):
             gzip.compress, compresslevel=self.config["COMPRESS_LEVEL"]
         )
         self.zlib_func = partial(
-            zlib.compress, compresslevel=self.config["COMPRESS_LEVEL"]
+            zlib.compress, level=self.config["COMPRESS_LEVEL"]
         )
 
     async def _gzip_compress(self, response):
@@ -62,18 +62,23 @@ class Compress(object):
     def compress(self, f=None):
         def decorator(f):
             @wraps(f)
-            async def _compress_response(request, *args, **kwargs):
+            async def _compress_response(*args, **kwargs):
+                if isinstance(args[0], Request):
+                    # Function-based endpoint
+                    request = args[0]
+                else:
+                    # View-based endpoint with "self" as first arg
+                    request = args[1]
 
                 accept_encoding = request.headers.get("Accept-Encoding", "").lower()
 
                 if (
                     not accept_encoding
-                    or "gzip" not in accept_encoding
-                    or "deflate" not in accept_encoding
+                    or ("gzip" not in accept_encoding and "deflate" not in accept_encoding)
                 ):
-                    return await f(request, *args, **kwargs)
+                    return await f(*args, **kwargs)
 
-                response = await f(request, *args, **kwargs)
+                response = await f(*args, **kwargs)
 
                 if (
                     type(response) is StreamingHTTPResponse
@@ -84,7 +89,7 @@ class Compress(object):
                 content_length = len(response.body)
                 content_type = response.content_type
 
-                if ";" in content_type:
+                if content_type and ";" in content_type:
                     content_type = content_type.split(";")[0]
 
                 if (
