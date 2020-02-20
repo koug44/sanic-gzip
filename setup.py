@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="sanic_gzip",
-    version="0.2.0",
+    version="0.3.0",
     author="Damien Alexandre",
     author_email="damien.alexandre@muage.org",
     description="Add compress to Sanic response as decorator",
@@ -18,4 +18,7 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
     ],
     python_requires=">=3.6",
+    install_requires=[
+        'sanic'
+    ]
 )
