@@ -5,7 +5,7 @@ import gzip
 import zlib
 
 from sanic.request import Request
-from sanic.response import StreamingHTTPResponse
+from sanic.response import ResponseStream
 
 DEFAULT_MIME_TYPES = frozenset(
     [
@@ -39,9 +39,7 @@ class Compress(object):
         self.gzip_func = partial(
             gzip.compress, compresslevel=self.config["COMPRESS_LEVEL"]
         )
-        self.zlib_func = partial(
-            zlib.compress, level=self.config["COMPRESS_LEVEL"]
-        )
+        self.zlib_func = partial(zlib.compress, level=self.config["COMPRESS_LEVEL"])
 
     async def _gzip_compress(self, response):
         response.body = await asyncio.get_event_loop().run_in_executor(
@@ -72,18 +70,14 @@ class Compress(object):
 
                 accept_encoding = request.headers.get("Accept-Encoding", "").lower()
 
-                if (
-                    not accept_encoding
-                    or ("gzip" not in accept_encoding and "deflate" not in accept_encoding)
+                if not accept_encoding or (
+                    "gzip" not in accept_encoding and "deflate" not in accept_encoding
                 ):
                     return await f(*args, **kwargs)
 
                 response = await f(*args, **kwargs)
 
-                if (
-                    type(response) is StreamingHTTPResponse
-                    or not 200 <= response.status < 300
-                ):
+                if type(response) is ResponseStream or not 200 <= response.status < 300:
                     return response
 
                 content_length = len(response.body)
